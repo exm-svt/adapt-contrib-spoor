@@ -53,9 +53,6 @@ define (function(require) {
         
 		if (window.__debug)
 			this.showDebugWindow();
-
-		if ((window.API && window.API.__offlineAPIWrapper) || (window.API_1484_11 && window.API_1484_11.__offlineAPIWrapper))
-			this.logger.error("Offline SCORM API is being used. No data will be reported to the LMS!");
 	};
 
 	// static
@@ -456,8 +453,13 @@ define (function(require) {
 	ScormWrapper.prototype.handleError = function(_msg) {
 		this.logger.error(_msg);
 		
-		if (!this.suppressErrors && (!this.logOutputWin || this.logOutputWin.closed) && confirm("An error has occured:\n\n" + _msg + "\n\nPress 'OK' to view debug information to send to technical support."))
+		// if (!this.suppressErrors && (!this.logOutputWin || this.logOutputWin.closed) && confirm("An error has occured:\n\n" + _msg + "\n\nPress 'OK' to view debug information to send to technical support."))
+		if (!this.suppressErrors && (!this.logOutputWin || this.logOutputWin.closed) && confirm("Une erreur est survenue.\nCette fenêtre va se fermer puis faites une nouvelle tentative.\n\nErreur technique :\nL'API LMS n'a pas été trouvée."))
+		{
+			document.body.innerHTML = "<p>Une erreur est survenue.<br/>Fermez cette fenêtre puis faites une nouvelle tentative.</p>";
 			this.showDebugWindow();
+			if (parent.frames.length > 0) {parent.close();} self.close();
+		}
 	};
 
 	ScormWrapper.prototype.getInteractionCount = function(){
@@ -476,7 +478,7 @@ define (function(require) {
 		this.setValue(cmiPrefix + ".student_response", response);
 		this.setValue(cmiPrefix + ".result", correct ? "correct" : "wrong");
 		if (latency !== null && latency !== undefined) this.setValue(cmiPrefix + ".latency", this.convertToSCORM12Time(latency));
-		this.setValue(cmiPrefix + ".time", this.getCMITime());
+		// this.setValue(cmiPrefix + ".time", this.getCMITime());
 	};
 
 
@@ -491,7 +493,7 @@ define (function(require) {
 		this.setValue(cmiPrefix + ".learner_response", response);
 		this.setValue(cmiPrefix + ".result", correct ? "correct" : "incorrect");
 		if (latency !== null && latency !== undefined) this.setValue(cmiPrefix + ".latency", this.convertToSCORM2004Time(latency));
-		this.setValue(cmiPrefix + ".timestamp", this.getISO8601Timestamp());
+		//this.setValue(cmiPrefix + ".timestamp", this.getISO8601Timestamp());
 	};
 
 
@@ -545,7 +547,7 @@ define (function(require) {
 			this.logOutputWin.close();
 		}
 		
-		this.logOutputWin = window.open("log_output.html", "Log", "width=600,height=300,status=no,scrollbars=yes,resizable=yes,menubar=yes,toolbar=yes,location=yes,top=0,left=0");
+		this.logOutputWin = window.open("log_output.html", "Log", "width=600,height=300,status=no,scrollbars=yes,resize=yes,menubar=yes,toolbar=yes,location=yes,top=0,left=0");
 		
 		if (this.logOutputWin)
 			this.logOutputWin.focus();

@@ -53,6 +53,10 @@ define (function(require) {
         
 		if (window.__debug)
 			this.showDebugWindow();
+
+		/* Timer de l'affichage de l'erreur commit */
+		this.falseCommitTimer;
+		/**/
 	};
 
 	// static
@@ -92,7 +96,7 @@ define (function(require) {
 			this.initTimedCommit();
 		}
 		else {
-			this.handleError("Course could not connect to the LMS");
+			this.handleError("APInotInitialized|Course could not connect to the LMS");
 		}
 		
 		return this.lmsConnected;
@@ -250,7 +254,8 @@ define (function(require) {
 						_errorMsg += "\nError " + _errorCode + ": " + this.scorm.debug.getInfo(_errorCode);
 						_errorMsg += "\nLMS Error Info: " + this.scorm.debug.getDiagnosticInfo(_errorCode);
 
-						this.handleError(_errorMsg);
+						//this.handleError(_errorMsg);
+						this.handleError("APIhasNotSave|"+_errorMsg);
 					}
 				}
 			}
@@ -293,7 +298,7 @@ define (function(require) {
 			this.lmsConnected = false;
 			
 			if (!this.scorm.quit()) {
-				this.handleError("Course could not finish");
+				this.handleError("APIhasNotFinish|Course could not finish");
 			}
 		}
 		else {
@@ -451,15 +456,35 @@ define (function(require) {
 	};
 
 	ScormWrapper.prototype.handleError = function(_msg) {
+
+		var msgPrefix = _msg.split("|")[0];
+
 		this.logger.error(_msg);
-		
-		// if (!this.suppressErrors && (!this.logOutputWin || this.logOutputWin.closed) && confirm("An error has occured:\n\n" + _msg + "\n\nPress 'OK' to view debug information to send to technical support."))
-		if (!this.suppressErrors && (!this.logOutputWin || this.logOutputWin.closed) && confirm("Une erreur est survenue.\nCette fenêtre va se fermer puis faites une nouvelle tentative.\n\nErreur technique :\nL'API LMS n'a pas été trouvée."))
+
+		if(msgPrefix == "APInotFound")
 		{
-			document.body.innerHTML = "<p>Une erreur est survenue.<br/>Fermez cette fenêtre puis faites une nouvelle tentative.</p>";
-			this.showDebugWindow();
+			alert("An error has occurred. This window will close and please try again later. Technical error: The LMS API was not found.");
+           	document.body.innerHTML = "<p>An error has occurred. Please close this window and try again.</p>";
+            if (parent.frames.length > 0) {parent.close();} self.close();
+		} 
+		
+		if(msgPrefix == "APInotInitialized")
+		{
+			alert("An error has occurred. This window will close and please try again. Technical error: LMSInitialize () returns false.");
+            document.body.innerHTML = "<p>An error has occurred. Please close this window and try again.</p>";
 			if (parent.frames.length > 0) {parent.close();} self.close();
 		}
+
+		
+		if(msgPrefix == "APIhasNotSave")
+		{
+			var _errorCode = this.scorm.debug.getCode();
+			document.getElementById("alertcommit").innerHTML = '<img id="warning" src="adapt/css/assets/attention.gif"/>Warning : an error has occurred when sending the update of your progress data, if the problem persists please close the training and try again later.<br/>Technical error: LMSCommit () returns false.<img onclick="closealert()" id="close" src="adapt/css/assets/croix_fermeture.png"/>';
+            document.getElementById("alertcommit").style.display = "block";
+			
+			if(this.falseCommitTimer != undefined) clearTimeout(this.falseCommitTimer);
+			this.falseCommitTimer = setTimeout(function(){ document.getElementById("alertcommit").style.display = "none"; }, 15000);
+		}	
 	};
 
 	ScormWrapper.prototype.getInteractionCount = function(){
